@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, str};
 use tokio::io::Interest;
 use tokio::net::{TcpListener, TcpStream, UnixListener, UnixStream};
 
@@ -17,6 +17,13 @@ async fn process_socket(socket: TcpStream) -> io::Result<()> {
         let mut data = vec![0; 1024];
         let val = socket.try_read(&mut data);
         println!("result:{:?}", val);
+        // println!("result:{:?}", std::str::from_utf8(&data));
+
+        let str_data = std::str::from_utf8(&data);
+        match str_data {
+            Ok(v) => print!("{}", v),
+            Err(v) => print!("{}", v),
+        }
     }
     Ok(())
 }
