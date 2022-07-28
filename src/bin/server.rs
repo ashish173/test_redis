@@ -2,12 +2,28 @@ use std::{io, str};
 use tokio::io::Interest;
 use tokio::net::{TcpListener, TcpStream, UnixListener, UnixStream};
 
+use bytes::{BufMut, BytesMut};
+
 pub async fn init_connection() {
 
     // TCPListener
 }
 
 struct Server {}
+
+fn parse_data(data: &str) {
+    // get command name (set, get)
+    println!("length {}", data.len());
+    let mut buffer = BytesMut::with_capacity(64);
+    let in_bytes = data.as_bytes();
+    buffer.put(&in_bytes[..]);
+
+    println!("Buffer {:?}", buffer);
+    // let split: Vec<&str> = data.trim().split(' ').collect();
+    // println!("split {:?}", split);
+
+    // based on command call the command::apply method
+}
 
 async fn process_socket(socket: TcpStream) -> io::Result<()> {
     println!("socket {:?}", socket);
@@ -17,11 +33,14 @@ async fn process_socket(socket: TcpStream) -> io::Result<()> {
         let mut data = vec![0; 1024];
         let val = socket.try_read(&mut data);
         println!("result:{:?}", val);
-        // println!("result:{:?}", std::str::from_utf8(&data));
+        println!("result:{:?}", data);
 
         let str_data = std::str::from_utf8(&data);
         match str_data {
-            Ok(v) => print!("{}", v),
+            Ok(v) => {
+                print!("{}", v);
+                parse_data(v);
+            }
             Err(v) => print!("{}", v),
         }
     }
