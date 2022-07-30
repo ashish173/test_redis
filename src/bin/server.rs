@@ -51,7 +51,7 @@ struct Set {
 }
 
 impl Set {
-    pub fn apply(self) -> Result<&'static str, Error> {
+    pub fn apply(self,) -> Result<&'static str, Error> {
         let result = "success response";
         Ok(result)
     }
@@ -85,29 +85,38 @@ async fn process_socket(socket: TcpStream) -> io::Result<()> {
     if server_result.is_readable() {
         let mut stream = BufWriter::new(socket);
 
-        let mut data = BytesMut::with_capacity(4 * 1024);
+        let mut data= BytesMut::with_capacity(4 * 1024);
         let _val = stream.read_buf(&mut data).await?;
-        let mut chunked_data = data.chunks_exact(3);
+        let mut chunked_data= data.chunks_exact(3);
         let command = std::str::from_utf8(chunked_data.next().unwrap()).unwrap();
         println!("command:{}", command);
         let cmd: Command = get_command(command);
-        fetch_attrs(cmd, chunked_data);
+        fetch_attrs(cmd, chunked_data, stream).await?;
     }
     Ok(())
 }
 
-pub fn fetch_attrs(cmd: Command, chunked_data: ChunksExact<u8>) {
+pub async fn fetch_attrs(cmd: Command, chunked_data: ChunksExact<'_, u8>, mut stream: BufWriter<TcpStream>) -> std::result::Result<(), std::io::Error> {
     // match command, Get, Set -> Enum Command
     println!("in fetch attrs, {:?}", cmd);
     match cmd {
         Command::Get => {
             println!("get");
+            // Get::apply()
+            Ok(())
         }
         Command::Set => {
             println!("set");
+             stream.write_all(b"Rohit").await?;
+            stream.flush().await?;
+            // println!("Result{:?}", result);
+
+            // Set::apply(self)
+            Ok(())
         }
         Command::Invalid => {
             println!("invalid");
+            Ok(())
         }
     }
 }
