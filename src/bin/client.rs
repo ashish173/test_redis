@@ -13,6 +13,6 @@ pub async fn main() -> io::Result<()> {
     // init_connection()
     let mut stream = TcpStream::connect("127.0.0.1:8081").await?;
     stream.writable().await?;
-    stream.write_all(b"get foo").await?;
+    stream.write_all(b"set foo").await?;
     Ok(())
 }

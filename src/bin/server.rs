@@ -13,10 +13,25 @@ pub async fn init_connection() {
     // TCPListener
 }
 
-struct Server {}
-
-async fn parse_data(data: BytesMut) -> io::Result<()> {
-    Ok(())
+ struct Get {
+    key: String,
+}
+struct Set {
+    key: String,
+    value: String,
+}
+ fn get_command(data: &str){
+    match data {
+        "set" => {
+            println!("Set command matched");
+        }
+        "get" => {
+            println!("Get command matched");
+        }
+        _ => {
+            println!("default")
+        }
+    }
 }
 async fn process_socket(socket: TcpStream) -> io::Result<()> {
     let server_result = socket.ready(Interest::READABLE).await?;
@@ -29,6 +44,7 @@ async fn process_socket(socket: TcpStream) -> io::Result<()> {
         let mut chunked_data = data.chunks_exact(3);
         let command = std::str::from_utf8(chunked_data.next().unwrap()).unwrap();
         println!("command:{}", command);
+        get_command(command);
     }
     Ok(())
 }
