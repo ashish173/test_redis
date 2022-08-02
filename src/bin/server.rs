@@ -103,12 +103,14 @@ pub async fn fetch_attrs(cmd: Command, chunked_data: ChunksExact<'_, u8>, mut st
         Command::Get => {
             println!("get");
             // Get::apply()
+            stream.write_all(b"I am Rohit Kumar").await?;
+            stream.flush().await?;
             Ok(())
         }
         Command::Set => {
             println!("set");
-             stream.write_all(b"Rohit").await?;
-            stream.flush().await?;
+             stream.write_all(b"I am Matru").await?;
+             stream.flush().await?;
             // println!("Result{:?}", result);
 
             // Set::apply(self)
