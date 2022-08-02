@@ -1,16 +1,38 @@
-use bytes::{buf, BytesMut};
+use bytes::{buf, BytesMut, Bytes};
 use std::{io, thread, time};
 use tokio::io::{AsyncReadExt, AsyncWriteExt, Interest};
 use tokio::net::TcpStream;
+use clap::{Parser, Subcommand};
 
-pub fn init_connection() {
-    println!("in client");
+// pub fn init_connection() {
+//     println!("in client");
+// }
+
+// struct Client {}
+#[derive(Parser, Debug)]
+struct Cli {
+    #[clap(subcommand)]
+    command: Command,
 }
 
-struct Client {}
+#[derive(Subcommand, Debug)]
+enum Command {
+    Get {
+        key: String,
+    },
+    Set {
+        key: String,
+        #[clap(parse(from_str = bytes_from_str))]
+        value: Bytes,
+    },
+}
+fn bytes_from_str(src: &str) -> Bytes {
+    Bytes::from(src.to_string())
+}
 
 #[tokio::main]
 pub async fn main() -> io::Result<()> {
+    let args = Cli::parse();
     // init_connection()
 
     // let mut data= BytesMut::with_capacity(4 * 1024);
