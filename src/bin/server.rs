@@ -172,7 +172,10 @@ async fn main() -> io::Result<()> {
     loop {
         //TODO move this to seperate Listner.listen method; It should call socket accept.
         let socket = listener.accept().await?;
-        let mut handler = Handler::new(listener.db.clone());
+        let new_db = listener.db.clone();
+        println!("new_db--{:?}", new_db);
+        let mut handler = Handler::new(new_db);
+        // handler.
         println!("connection accepted server");
         process_socket(socket, &mut handler).await?;
         // handler.run();

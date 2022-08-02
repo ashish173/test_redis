@@ -25,14 +25,20 @@ impl Handler {
         let val = value.clone();
 
         &self.db.entries.insert(String::from(key), Bytes::from(val));
+        // &self.db.entries.;
 
+        println!("Db entries=={:?}", &self.db.entries);
+        let result = &self.db.entries.get(&key.to_string());
+
+        println!("Result ==={:?}", result.unwrap());
         // sleep(Duration::from_millis(4000));
         // Ok(("success".to_string()))
     }
     pub fn read(&mut self, arr: &[String]) {
         let key = &arr[1];
-
+        println!("latest entries==={:?}", &self.db.entries);
         let result = &self.db.entries.get(&key.to_string());
-        println!("{}: {:?}", key, result.unwrap());
+        // println!("{}: {:?}", key, result.unwrap());
+        
     }
 }

@@ -84,18 +84,22 @@ pub async fn main() -> io::Result<()> {
         Command::Get { key } => {
             //     println!("i am inside get");
             //     println!("{:?}", key);
-            //     let server_result = stream.ready(Interest::READABLE).await.unwrap();
-            //     if server_result.is_readable() {
-            //         stream.read_buf(&mut data).await?;
-            //         {
-            //             if let Ok(string) = std::str::from_utf8(&mut data) {
-            //                 println!("\"{}\"", string);
-            //             } else {
-            //                 println!("{:?}", data);
-            //             }
-            //         };
-            //     }
-            // return Ok(());
+                // if server_result.is_readable() {
+                    stream.write_all(b"get").await?;
+                    stream.write_all(b" ").await?;
+        
+                    stream.write_all(&key.as_bytes()).await?;
+
+                    // stream.read_buf(&mut data).await?;
+                    // {
+                    //     if let Ok(string) = std::str::from_utf8(&mut data) {
+                    //         println!("\"{}\"", string);
+                    //     } else {
+                    //         println!("{:?}", data);
+                    //     }
+                    // };
+                // }
+            return Ok(());
         }
     }
 
