@@ -1,10 +1,13 @@
-use test_redis::handler::{Handler, self};
-use test_redis::Db;
+use test_redis::handler::{self, Handler};
+use test_redis::{buffer_to_array, Db};
 use tokio::fs::File;
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt, BufWriter};
 use tokio::time::error::Error;
 // use crate::Set;
 // use tokio::time::error::Error;
+
+use std::thread::sleep;
+use std::time::Duration;
 
 use std::collections::HashMap;
 // use std::error::Error;
@@ -82,30 +85,36 @@ async fn process_socket(socket: TcpStream, handler: &mut Handler) -> io::Result<
         let mut data = BytesMut::with_capacity(4 * 1024);
         let _val = stream.read_buf(&mut data).await?;
         // println!("val========={:?}",std::str::from_utf8(val));
-        println!("data======={:?}",data);
-        let mut chunked_data = data.chunks_exact(3);
-        let command = std::str::from_utf8(chunked_data.next().unwrap()).unwrap();
-        println!("command:{}", command);
-        let cmd: Command = get_command(command);
-        fetch_attrs(cmd, chunked_data, stream, handler).await?;
+        println!("data======={:?}", data);
+        // let mut chunked_data = data.chunks_exact(3);
+        // let command = std::str::from_utf8(chunked_data.next().unwrap()).unwrap();
+        // let key = std::str::from_utf8(chunked_data.next().unwrap()).unwrap();
+        // let value = std::str::from_utf8(chunked_data.next().unwrap()).unwrap();
+        // println!("command:{} key:{}  value:{}", command, key, value);
+        // let cmd: Command = Command::Set; // get_command(command);
+        fetch_attrs(stream, handler, &mut data).await?;
     }
     Ok(())
 }
 
 pub async fn fetch_attrs(
-    cmd: Command,
-    chunked_data: ChunksExact<'_, u8>,
     mut stream: BufWriter<TcpStream>,
-    handler: &mut Handler
+    handler: &mut Handler,
+    data: &mut BytesMut,
 ) -> std::result::Result<(), std::io::Error> {
     // match command, Get, Set -> Enum Command
-    println!("in fetch attrs, {:?}", cmd);
-    let key = "Player1 Key";
-    let value: &str = "Rohit Value";
-    match cmd {
+    // println!("in fetch attrs, {:?}", cmd);
+    // let key = "Player1 Key";
+    // let value = "Rohit Value";
+    let cla_attrs = buffer_to_array(data);
+
+    let command = get_command(&cla_attrs[0]);
+    // println!("command {}", command);
+    match command {
         Command::Get => {
             println!("get");
             // Get::apply()
+            handler.read(&cla_attrs);
             stream.write_all(b"I am Rohit Kumar").await?;
             stream.flush().await?;
             Ok(())
@@ -114,12 +123,14 @@ pub async fn fetch_attrs(
             println!("set");
             // let key = "Player1 Key";
             // let value: &str = "Rohit Value";
-            handler.write(key, value);
-            stream.write_all(b"I am Matru").await?;
+            handler.write(&cla_attrs);
+            println!("just returned from handler write");
+            // sleep(Duration::from_millis(4000));
+            stream.write_all(b"Ok").await?;
             stream.flush().await?;
             // println!("Result{:?}", result);
 
-            // Set::apply(self)key: &str 
+            // Set::apply(self)key: &str
             Ok(())
         }
         Command::Invalid => {
@@ -165,6 +176,5 @@ async fn main() -> io::Result<()> {
         println!("connection accepted server");
         process_socket(socket, &mut handler).await?;
         // handler.run();
-        
     }
 }

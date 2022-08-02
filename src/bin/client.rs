@@ -1,8 +1,9 @@
 use bytes::{buf, Bytes, BytesMut};
 use clap::{Parser, Subcommand};
+use std::fmt::Error;
 use std::{io, thread, time};
 // use bytes::BytesMut;
-use tokio::io::{AsyncWriteExt, Interest, AsyncReadExt};
+use tokio::io::{AsyncReadExt, AsyncWriteExt, Interest};
 use tokio::net::TcpStream;
 
 // pub fn init_connection() {
@@ -35,7 +36,7 @@ fn bytes_from_str(src: &str) -> Bytes {
 pub async fn main() -> io::Result<()> {
     let args = Cli::parse();
     // init_connection()
-    
+
     // let mut data= BytesMut::with_capacity(4 * 1024);
     let mut data = BytesMut::with_capacity(4 * 1024);
     let mut stream = TcpStream::connect("127.0.0.1:8081").await.unwrap();
@@ -48,45 +49,55 @@ pub async fn main() -> io::Result<()> {
         Command::Set { key, value } => {
             // client.set(&key, value).await.unwrap();
             stream.write_all(b"set").await?;
-            stream.write_all( &key.as_bytes()).await?;
+            stream.write_all(b" ").await?;
+
+            stream.write_all(&key.as_bytes()).await?;
+            stream.write_all(b" ").await?;
+
             stream.write_all(&value).await?;
             // println!("i am inside set");
             // println!("{:?}", key);
             // println!("{:?}", value);
-            println!("OK");
+            println!("waiting to receive successs notification data");
+            let mut buf = BytesMut::with_capacity(1024);
+            let length = stream.read_buf(&mut buf).await?;
+            println!("buffer {:?}", buf);
+            // return Ok(());
+            match std::str::from_utf8(&mut buf) {
+                Ok(resp) => {
+                    println!("okay response");
+                    println!("response: {}", resp);
+                    if (*resp == "Ok".to_string()) {
+                        println!("okay matched");
+                    } else if (resp.to_string() == "Ok".to_string()) {
+                        println!("had to convert first");
+                    }
+                    // return Ok((string));
+                } // Error
+                Err(err) => {
+                    println!("in errr");
+                    // return Err(err.into());
+                }
+            }
+            // println!("OK");
         }
         Command::Get { key } => {
-            println!("i am inside get");
-            println!("{:?}", key);
-            let server_result = stream.ready(Interest::READABLE).await.unwrap();
-            if server_result.is_readable() {
-                stream.read_buf(&mut data).await?;
-                {
-                    if let Ok(string) = std::str::from_utf8(&mut data) {
-                        println!("\"{}\"", string);
-                    } else {
-                        println!("{:?}", data);
-                    }
-                };
-            }
+            //     println!("i am inside get");
+            //     println!("{:?}", key);
+            //     let server_result = stream.ready(Interest::READABLE).await.unwrap();
+            //     if server_result.is_readable() {
+            //         stream.read_buf(&mut data).await?;
+            //         {
+            //             if let Ok(string) = std::str::from_utf8(&mut data) {
+            //                 println!("\"{}\"", string);
+            //             } else {
+            //                 println!("{:?}", data);
+            //             }
+            //         };
+            //     }
+            // return Ok(());
         }
     }
 
-    // stream.writable().await?;
-    // stream.write_all(b"get").await?;
-    // println!("Result_new{:?}", stream);
-    // thread::sleep(time::Duration::from_millis(1000));
-    // let server_result = stream.ready(Interest::READABLE).await?;
-
-    // if server_result.is_readable() {
-    //     stream.read_buf(&mut data).await?;
-    //     {
-    //         if let Ok(string) = std::str::from_utf8(&mut data) {
-    //             println!("\"{}\"", string);
-    //         } else {
-    //             println!("{:?}", data);
-    //         }
-    //     };
-    // }
     Ok(())
 }
