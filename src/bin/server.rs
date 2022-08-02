@@ -112,8 +112,11 @@ pub async fn fetch_attrs(
         }
         Command::Set => {
             println!("set");
-             stream.write_all(b"I am Matru").await?;
-             stream.flush().await?;
+            // let key = "Player1 Key";
+            // let value: &str = "Rohit Value";
+            handler.write(key, value);
+            stream.write_all(b"I am Matru").await?;
+            stream.flush().await?;
             // println!("Result{:?}", result);
 
             // Set::apply(self)key: &str 
