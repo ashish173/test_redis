@@ -1,5 +1,5 @@
 use bytes::{Buf, Bytes, BytesMut};
-use std::{collections::HashMap, rc::Rc, cell::RefCell};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use tokio::time::error::Error;
 pub mod client;
 pub mod handler;
@@ -14,9 +14,6 @@ impl Db {
             entries: Rc::new(RefCell::new(HashMap::new())),
         }
     }
-    pub fn insert(key: String, value: String){
-        println!("Key:{}====value=={}", key, value);
-    }
 }
 
 pub struct Set {
@@ -24,7 +21,9 @@ pub struct Set {
     value: String,
 }
 
+// TODO move this to a separate file
 impl Set {
+    // TODO move the actual data reading to this Set#apply implementation
     pub fn apply(self) -> Result<&'static str, Error> {
         let result = "success response";
         Ok(result)
@@ -39,27 +38,19 @@ pub fn buffer_to_array(buf: &mut BytesMut) -> Vec<String> {
     for i in 0..length {
         match buf.get_u8() {
             b' ' => {
-                // insert the word into vector
-                println!("in space {}", word);
-
                 vec.push(word);
                 word = "".to_string();
             }
-            (test) => {
+            test => {
                 // increase the word
-                println!("other than space: {}", test);
                 word.push(test as char);
                 let new = word.clone();
-                if (i == length - 1) {
+                if i == length - 1 {
                     vec.push(new);
                 }
             }
         }
     }
 
-    // vec.push("set".to_string());
-    // vec.push("foo".to_string());
-    // vec.push("bar".to_string());
-    println!("final vector {:?}", vec);
     vec
 }

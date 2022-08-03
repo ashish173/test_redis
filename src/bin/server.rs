@@ -1,31 +1,12 @@
-use test_redis::handler::{self, Handler};
-use test_redis::{buffer_to_array, Db};
-use tokio::fs::File;
-use tokio::io::{self, AsyncReadExt, AsyncWriteExt, BufWriter};
-use tokio::time::error::Error;
-// use crate::Set;
-// use tokio::time::error::Error;
-
-use std::borrow::BorrowMut;
-use std::thread::sleep;
-use std::time::Duration;
-
-use std::collections::HashMap;
-// use std::error::Error;
+use bytes::BytesMut;
 use std::fmt::{self, Formatter};
-// use std::fmt::Error;
-use std::io::Cursor;
-use std::slice::ChunksExact;
-use std::{io as Test, str};
+use std::str;
+use test_redis::handler::Handler;
+use test_redis::{buffer_to_array, Db};
 use tokio::io::Interest;
-use tokio::net::{TcpListener, TcpStream, UnixListener, UnixStream};
-
-use bytes::{BufMut, Bytes, BytesMut};
-
-pub async fn init_connection() {
-
-    // TCPListener
-}
+use tokio::io::{self, AsyncReadExt, AsyncWriteExt, BufWriter};
+use tokio::net::{TcpListener, TcpStream};
+use tokio::time::error::Error;
 
 use core::fmt::Debug;
 pub enum Command {
@@ -48,7 +29,10 @@ struct Get {
     key: String,
 }
 
+// TODO move this to a separate file
 impl Get {
+    // Unused so far
+    // TODO move the actual data reading to this Get#apply implementation
     pub fn apply() -> Result<&'static str, Error> {
         let result = "success response";
         Ok(result)
@@ -56,24 +40,8 @@ impl Get {
 }
 fn get_command(data: &str) -> Command {
     match data {
-        "set" => {
-            println!("Set command matched");
-            Command::Set
-            // let set = Set {
-            //     key: "sdf".to_string(),
-            //     value: "dfdf".to_string(),
-            // };
-            // fetch_attrs()
-            // set.apply();
-        }
-        "get" => {
-            // let get = Get {
-            //     key: "sdf".to_string(),
-            //     // value: "dfdf".to_string(),
-            // };
-            println!("Get command matched");
-            Command::Get
-        }
+        "set" => Command::Set,
+        "get" => Command::Get,
         _ => Command::Invalid,
     }
 }
@@ -85,14 +53,6 @@ async fn process_socket(socket: TcpStream, handler: &mut Handler) -> io::Result<
 
         let mut data = BytesMut::with_capacity(4 * 1024);
         let _val = stream.read_buf(&mut data).await?;
-        // println!("val========={:?}",std::str::from_utf8(val));
-        println!("data======={:?}", data);
-        // let mut chunked_data = data.chunks_exact(3);
-        // let command = std::str::from_utf8(chunked_data.next().unwrap()).unwrap();
-        // let key = std::str::from_utf8(chunked_data.next().unwrap()).unwrap();
-        // let value = std::str::from_utf8(chunked_data.next().unwrap()).unwrap();
-        // println!("command:{} key:{}  value:{}", command, key, value);
-        // let cmd: Command = Command::Set; // get_command(command);
         fetch_attrs(stream, handler, &mut data).await?;
     }
     Ok(())
@@ -103,32 +63,39 @@ pub async fn fetch_attrs(
     handler: &mut Handler,
     data: &mut BytesMut,
 ) -> std::result::Result<(), std::io::Error> {
-    // match command, Get, Set -> Enum Command
-    // println!("in fetch attrs, {:?}", cmd);
-    // let key = "Player1 Key";
-    // let value = "Rohit Value";
     let cla_attrs = buffer_to_array(data);
 
     let command = get_command(&cla_attrs[0]);
-    // println!("command {}", command);
     match command {
         Command::Get => {
-           let rohit = handler.read(&cla_attrs);
-           println!("{:?}", rohit);
-            stream.write_all(b"I am Rohit Kumar").await?;
+            let result = handler.read(&cla_attrs);
+            match result {
+                Ok(result) => {
+                    stream.write_all(&result).await?;
+                }
+                Err(err) => {
+                    stream.write_all(b"").await?;
+                }
+            }
+
             stream.flush().await?;
             Ok(())
         }
         Command::Set => {
-            handler.write(&cla_attrs);
-            stream.write_all(b"Ok").await?;
+            let resp = handler.write(&cla_attrs);
+            match resp {
+                Ok(result) => {
+                    stream.write_all(&result.as_bytes()).await?;
+                }
+                Err(err) => {
+                    stream.write_all(b"").await?;
+                }
+            }
+
             stream.flush().await?;
             Ok(())
         }
-        Command::Invalid => {
-            println!("invalid");
-            Ok(())
-        }
+        Command::Invalid => Ok(()),
     }
 }
 struct Listener {
@@ -144,7 +111,6 @@ impl Listener {
     }
 
     pub async fn accept(&self) -> std::result::Result<TcpStream, std::io::Error> {
-        // self.listener.accept()
         match self.listener.accept().await {
             Ok((socket, _)) => return Ok(socket),
             Err(err) => {
@@ -156,22 +122,14 @@ impl Listener {
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
-    println!("in server");
-
     let listener = TcpListener::bind("127.0.0.1:8081").await?;
-    let mut listener = Listener::new(listener);
+    let listener = Listener::new(listener);
 
     loop {
         // TODO move this to seperate Listner.listen method; It should call socket accept.
-        let mut socket = listener.accept().await?;
-        let mut new_db = listener.db.clone();
-        // println!("new_db--{:?}", new_db);
-      
+        let socket = listener.accept().await?;
+        let new_db = listener.db.clone();
         let mut handler = Handler::new(new_db);
-        // handler.
-        // println!("connection accepted server");
         process_socket(socket, &mut handler).await?;
-        // handler.run();
-        // Ok(())
     }
 }

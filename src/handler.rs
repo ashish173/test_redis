@@ -1,16 +1,6 @@
-use std::borrow::Borrow;
-use std::collections::HashMap;
-use std::thread::sleep;
-use std::time::Duration;
-
-use std::collections::hash_map::Values;
-use std::io::ErrorKind;
-
-use bytes::Bytes;
-use tokio::time::error::Error;
-
 use crate::Db;
-use crate::Set;
+use bytes::Bytes;
+use core::result::Result;
 pub struct Handler {
     db: Db,
 }
@@ -18,35 +8,42 @@ impl Handler {
     pub fn new(db: Db) -> Handler {
         Handler { db: db }
     }
-    pub fn write(&mut self, arr: &[String]) {
+    pub fn write(&mut self, arr: &[String]) -> Result<&str, &'static str> {
         let key = &arr[1];
         let value = &arr[2];
-        // let val = value.to_string();
-        // let new_val = "df";
-        println!("value: {:?}", value.clone());
+
+        // we need to clone the referenced value since Bytes::from() function expects a 'static lifetime
+        // variable but `value` has unknown lifetime in this function context
         let val = value.clone();
-// let target = HashMap::new();
-        let ptr = &self.db.entries.borrow_mut().insert(String::from(key), Bytes::from(val));
-        // insert(String::from(key), Bytes::from(val));
-        // &self.db.entries.;
-        // ptr.insert(String::from(key), Bytes::from(val));
-        println!("Db entries=={:?}", &self.db.entries);
-        let copy = &self.db.entries.borrow_mut();
-        let result = copy.get(&key.to_string());
 
-        println!("Result ==={:?}", result.unwrap());
-        // sleep(Duration::from_millis(4000));
-        // Ok(("success".to_string()))
+        let p = &self
+            .db
+            .entries
+            .borrow_mut()
+            .insert(String::from(key), Bytes::from(val));
+
+        match p {
+            Some(_p) => Ok("r Ok"),
+            None => Ok("Ok"),
+        }
     }
-    pub fn read(&mut self, arr: &[String]) {
-        let key = &arr[1];
-        // println!("latest entries==={:?}", &self.db.entries);
 
-        println!("Db entries=={:?}", &self.db.entries);
-        let copy = &self.db.entries.try_borrow().unwrap();
-        let result = copy.get(&key.to_string());
-        println!("key: {}: value: {:?}", key, result.unwrap());
-        
-        // Ok(result)
+    /// Reads data from the database
+    pub fn read(&mut self, arr: &[String]) -> Result<Bytes, &str> {
+        let key = &arr[1];
+        let db_copy = &self.db.entries.try_borrow().unwrap();
+        let db_clone = db_copy.clone();
+        let query_result = db_clone.get(key);
+
+        if let Some(value) = query_result {
+            // this cloning is needed because of the below error
+            // Error: cannot return value referencing temporary value
+            // returns a value referencing data owned by the current function
+            // sol: we create a clone of the temporary value and then return it.
+            let cloned_value = value.clone();
+            return Ok(cloned_value);
+        } else {
+            return Err("no such key found");
+        }
     }
 }

@@ -1,14 +1,8 @@
-use bytes::{buf, Bytes, BytesMut};
+use bytes::{Bytes, BytesMut};
 use clap::{Parser, Subcommand};
-use std::fmt::Error;
-use std::{io, thread, time};
-// use bytes::BytesMut;
-use tokio::io::{AsyncReadExt, AsyncWriteExt, Interest};
+use std::io;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
-
-// pub fn init_connection() {
-//     println!("in client");
-// }
 
 // struct Client {}
 #[derive(Parser, Debug)]
@@ -35,9 +29,7 @@ fn bytes_from_str(src: &str) -> Bytes {
 #[tokio::main]
 pub async fn main() -> io::Result<()> {
     let args = Cli::parse();
-    // init_connection()
 
-    let mut data = BytesMut::with_capacity(4 * 1024);
     let mut stream = TcpStream::connect("127.0.0.1:8081").await.unwrap();
     match args.command {
         Command::Set { key, value } => {
@@ -52,10 +44,10 @@ pub async fn main() -> io::Result<()> {
             let _length = stream.read_buf(&mut buf).await?;
             match std::str::from_utf8(&mut buf) {
                 Ok(resp) => {
-                    if *resp == "Ok".to_string() {
-                        println!("\"Ok\"");
-                    } else if resp.to_string() == "Ok".to_string() {
-                        println!("had to convert first");
+                    if resp == "r Ok" {
+                        println!("updated key");
+                    } else if resp == "Ok" {
+                        println!("key set");
                     }
                 }
                 Err(_err) => {
@@ -68,13 +60,21 @@ pub async fn main() -> io::Result<()> {
             stream.write_all(b" ").await?;
 
             stream.write_all(&key.as_bytes()).await?;
-            {
-                if let Ok(string) = std::str::from_utf8(&mut data) {
-                    println!("\"{}\"", string);
-                } else {
-                    println!("{:?}", data);
+
+            let mut buf = BytesMut::with_capacity(1024);
+            let _length = stream.read_buf(&mut buf).await?;
+            match std::str::from_utf8(&mut buf) {
+                Ok(resp) => {
+                    if resp == "" {
+                        println!("no such key found");
+                    } else {
+                        println!("key: {} => value: {}", key, resp);
+                    }
                 }
-            };
+                Err(_err) => {
+                    println!("in errr");
+                }
+            }
             return Ok(());
         }
     }
