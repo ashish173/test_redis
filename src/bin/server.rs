@@ -6,6 +6,7 @@ use tokio::time::error::Error;
 // use crate::Set;
 // use tokio::time::error::Error;
 
+use std::borrow::BorrowMut;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -112,25 +113,16 @@ pub async fn fetch_attrs(
     // println!("command {}", command);
     match command {
         Command::Get => {
-            println!("get");
-            // Get::apply()
-            handler.read(&cla_attrs);
+           let rohit = handler.read(&cla_attrs);
+           println!("{:?}", rohit);
             stream.write_all(b"I am Rohit Kumar").await?;
             stream.flush().await?;
             Ok(())
         }
         Command::Set => {
-            println!("set");
-            // let key = "Player1 Key";
-            // let value: &str = "Rohit Value";
             handler.write(&cla_attrs);
-            println!("just returned from handler write");
-            // sleep(Duration::from_millis(4000));
             stream.write_all(b"Ok").await?;
             stream.flush().await?;
-            // println!("Result{:?}", result);
-
-            // Set::apply(self)key: &str
             Ok(())
         }
         Command::Invalid => {
@@ -167,17 +159,19 @@ async fn main() -> io::Result<()> {
     println!("in server");
 
     let listener = TcpListener::bind("127.0.0.1:8081").await?;
-    let listener = Listener::new(listener);
+    let mut listener = Listener::new(listener);
 
     loop {
-        //TODO move this to seperate Listner.listen method; It should call socket accept.
-        let socket = listener.accept().await?;
-        let new_db = listener.db.clone();
-        println!("new_db--{:?}", new_db);
+        // TODO move this to seperate Listner.listen method; It should call socket accept.
+        let mut socket = listener.accept().await?;
+        let mut new_db = listener.db.clone();
+        // println!("new_db--{:?}", new_db);
+      
         let mut handler = Handler::new(new_db);
         // handler.
-        println!("connection accepted server");
+        // println!("connection accepted server");
         process_socket(socket, &mut handler).await?;
         // handler.run();
+        // Ok(())
     }
 }

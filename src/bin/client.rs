@@ -37,17 +37,10 @@ pub async fn main() -> io::Result<()> {
     let args = Cli::parse();
     // init_connection()
 
-    // let mut data= BytesMut::with_capacity(4 * 1024);
     let mut data = BytesMut::with_capacity(4 * 1024);
     let mut stream = TcpStream::connect("127.0.0.1:8081").await.unwrap();
-
-    // println!("in line 43");
-
-    println!("{:?}", args.command);
-
     match args.command {
         Command::Set { key, value } => {
-            // client.set(&key, value).await.unwrap();
             stream.write_all(b"set").await?;
             stream.write_all(b" ").await?;
 
@@ -55,50 +48,33 @@ pub async fn main() -> io::Result<()> {
             stream.write_all(b" ").await?;
 
             stream.write_all(&value).await?;
-            // println!("i am inside set");
-            // println!("{:?}", key);
-            // println!("{:?}", value);
-            println!("waiting to receive successs notification data");
             let mut buf = BytesMut::with_capacity(1024);
-            let length = stream.read_buf(&mut buf).await?;
-            println!("buffer {:?}", buf);
-            // return Ok(());
+            let _length = stream.read_buf(&mut buf).await?;
             match std::str::from_utf8(&mut buf) {
                 Ok(resp) => {
-                    println!("okay response");
-                    println!("response: {}", resp);
-                    if (*resp == "Ok".to_string()) {
-                        println!("okay matched");
-                    } else if (resp.to_string() == "Ok".to_string()) {
+                    if *resp == "Ok".to_string() {
+                        println!("\"Ok\"");
+                    } else if resp.to_string() == "Ok".to_string() {
                         println!("had to convert first");
                     }
-                    // return Ok((string));
-                } // Error
-                Err(err) => {
+                }
+                Err(_err) => {
                     println!("in errr");
-                    // return Err(err.into());
                 }
             }
-            // println!("OK");
         }
         Command::Get { key } => {
-            //     println!("i am inside get");
-            //     println!("{:?}", key);
-                // if server_result.is_readable() {
-                    stream.write_all(b"get").await?;
-                    stream.write_all(b" ").await?;
-        
-                    stream.write_all(&key.as_bytes()).await?;
+            stream.write_all(b"get").await?;
+            stream.write_all(b" ").await?;
 
-                    // stream.read_buf(&mut data).await?;
-                    // {
-                    //     if let Ok(string) = std::str::from_utf8(&mut data) {
-                    //         println!("\"{}\"", string);
-                    //     } else {
-                    //         println!("{:?}", data);
-                    //     }
-                    // };
-                // }
+            stream.write_all(&key.as_bytes()).await?;
+            {
+                if let Ok(string) = std::str::from_utf8(&mut data) {
+                    println!("\"{}\"", string);
+                } else {
+                    println!("{:?}", data);
+                }
+            };
             return Ok(());
         }
     }

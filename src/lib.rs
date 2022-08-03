@@ -1,18 +1,21 @@
 use bytes::{Buf, Bytes, BytesMut};
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc, cell::RefCell};
 use tokio::time::error::Error;
 pub mod client;
 pub mod handler;
 // pub server:: mod db;
 #[derive(Clone, Debug)]
 pub struct Db {
-    entries: HashMap<String, Bytes>,
+    entries: Rc<RefCell<HashMap<String, Bytes>>>,
 }
 impl Db {
     pub fn new() -> Db {
         Db {
-            entries: HashMap::new(),
+            entries: Rc::new(RefCell::new(HashMap::new())),
         }
+    }
+    pub fn insert(key: String, value: String){
+        println!("Key:{}====value=={}", key, value);
     }
 }
 

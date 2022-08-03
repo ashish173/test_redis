@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+use std::collections::HashMap;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -23,12 +25,14 @@ impl Handler {
         // let new_val = "df";
         println!("value: {:?}", value.clone());
         let val = value.clone();
-
-        &self.db.entries.insert(String::from(key), Bytes::from(val));
+// let target = HashMap::new();
+        let ptr = &self.db.entries.borrow_mut().insert(String::from(key), Bytes::from(val));
+        // insert(String::from(key), Bytes::from(val));
         // &self.db.entries.;
-
+        // ptr.insert(String::from(key), Bytes::from(val));
         println!("Db entries=={:?}", &self.db.entries);
-        let result = &self.db.entries.get(&key.to_string());
+        let copy = &self.db.entries.borrow_mut();
+        let result = copy.get(&key.to_string());
 
         println!("Result ==={:?}", result.unwrap());
         // sleep(Duration::from_millis(4000));
@@ -36,9 +40,13 @@ impl Handler {
     }
     pub fn read(&mut self, arr: &[String]) {
         let key = &arr[1];
-        println!("latest entries==={:?}", &self.db.entries);
-        let result = &self.db.entries.get(&key.to_string());
-        // println!("{}: {:?}", key, result.unwrap());
+        // println!("latest entries==={:?}", &self.db.entries);
+
+        println!("Db entries=={:?}", &self.db.entries);
+        let copy = &self.db.entries.try_borrow().unwrap();
+        let result = copy.get(&key.to_string());
+        println!("key: {}: value: {:?}", key, result.unwrap());
         
+        // Ok(result)
     }
 }
