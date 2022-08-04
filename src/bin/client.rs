@@ -27,7 +27,7 @@ fn bytes_from_str(src: &str) -> Bytes {
 }
 
 #[tokio::main]
-pub async fn main() -> io::Result<()> {
+pub async fn main() -> Result<(), std::io::Error> {
     let args = Cli::parse();
 
     let mut stream = TcpStream::connect("127.0.0.1:8081").await.unwrap();

@@ -1,7 +1,6 @@
 use bytes::{Buf, Bytes, BytesMut};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use tokio::time::error::Error;
-pub mod client;
 pub mod handler;
 // pub server:: mod db;
 #[derive(Clone, Debug)]

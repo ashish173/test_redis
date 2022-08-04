@@ -21,3 +21,11 @@ impl Get {
 5. Debug fmt blog
 6. Difference in Bytes::bytes from {str, io} std, when to use which? Blog topic
 7.
+
+## core::Result
+
+takes 2 generic parameters
+
+## std::io::Result
+
+takes 1 generic argument
