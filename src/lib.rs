@@ -1,33 +1,7 @@
-use bytes::{Buf, Bytes, BytesMut};
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
-use tokio::time::error::Error;
-pub mod handler;
-// pub server:: mod db;
-#[derive(Clone, Debug)]
-pub struct Db {
-    entries: Rc<RefCell<HashMap<String, Bytes>>>,
-}
-impl Db {
-    pub fn new() -> Db {
-        Db {
-            entries: Rc::new(RefCell::new(HashMap::new())),
-        }
-    }
-}
+use bytes::{Buf, BytesMut};
 
-pub struct Set {
-    key: String,
-    value: String,
-}
-
-// TODO move this to a separate file
-impl Set {
-    // TODO move the actual data reading to this Set#apply implementation
-    pub fn apply(self) -> Result<&'static str, Error> {
-        let result = "success response";
-        Ok(result)
-    }
-}
+pub mod db;
+pub use db::Db;
 
 pub fn buffer_to_array(buf: &mut BytesMut) -> Vec<String> {
     let mut vec = vec![];

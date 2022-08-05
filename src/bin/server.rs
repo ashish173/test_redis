@@ -1,12 +1,11 @@
 use bytes::BytesMut;
+// use db::Db;
 use std::fmt::{self, Formatter};
 use std::str;
-use test_redis::handler::Handler;
 use test_redis::{buffer_to_array, Db};
 use tokio::io::Interest;
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt, BufWriter};
 use tokio::net::{TcpListener, TcpStream};
-use tokio::time::error::Error;
 
 use core::fmt::Debug;
 pub enum Command {
@@ -25,19 +24,6 @@ impl Debug for Command {
     }
 }
 
-struct Get {
-    key: String,
-}
-
-// TODO move this to a separate file
-impl Get {
-    // Unused so far
-    // TODO move the actual data reading to this Get#apply implementation
-    pub fn apply() -> Result<&'static str, Error> {
-        let result = "success response";
-        Ok(result)
-    }
-}
 fn get_command(data: &str) -> Command {
     match data {
         "set" => Command::Set,
@@ -45,7 +31,7 @@ fn get_command(data: &str) -> Command {
         _ => Command::Invalid,
     }
 }
-async fn process_socket(socket: TcpStream, handler: &mut Handler) -> io::Result<()> {
+async fn process_socket(socket: TcpStream, handler: &mut Db) -> io::Result<()> {
     let server_result = socket.ready(Interest::READABLE).await?;
 
     if server_result.is_readable() {
@@ -60,7 +46,7 @@ async fn process_socket(socket: TcpStream, handler: &mut Handler) -> io::Result<
 
 pub async fn fetch_attrs(
     mut stream: BufWriter<TcpStream>,
-    handler: &mut Handler,
+    handler: &mut Db,
     data: &mut BytesMut,
 ) -> std::result::Result<(), std::io::Error> {
     let cla_attrs = buffer_to_array(data);
@@ -73,7 +59,7 @@ pub async fn fetch_attrs(
                 Ok(result) => {
                     stream.write_all(&result).await?;
                 }
-                Err(err) => {
+                Err(_err) => {
                     stream.write_all(b"").await?;
                 }
             }
@@ -87,7 +73,7 @@ pub async fn fetch_attrs(
                 Ok(result) => {
                     stream.write_all(&result.as_bytes()).await?;
                 }
-                Err(err) => {
+                Err(_err) => {
                     stream.write_all(b"").await?;
                 }
             }
@@ -98,38 +84,15 @@ pub async fn fetch_attrs(
         Command::Invalid => Ok(()),
     }
 }
-struct Listener {
-    listener: TcpListener,
-    db: Db,
-}
-impl Listener {
-    pub fn new(listener: TcpListener) -> Listener {
-        Listener {
-            listener: listener,
-            db: Db::new(),
-        }
-    }
-
-    pub async fn accept(&self) -> std::result::Result<TcpStream, std::io::Error> {
-        match self.listener.accept().await {
-            Ok((socket, _)) => return Ok(socket),
-            Err(err) => {
-                return Err(err.into());
-            }
-        }
-    }
-}
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
     let listener = TcpListener::bind("127.0.0.1:8081").await?;
-    let listener = Listener::new(listener);
-
+    let db = Db::new();
     loop {
         // TODO move this to seperate Listner.listen method; It should call socket accept.
-        let socket = listener.accept().await?;
-        let new_db = listener.db.clone();
-        let mut handler = Handler::new(new_db);
-        process_socket(socket, &mut handler).await?;
+        let (socket, _) = listener.accept().await?;
+        let mut new_db = db.clone();
+        process_socket(socket, &mut new_db).await?;
     }
 }

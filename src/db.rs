@@ -1,13 +1,19 @@
-use crate::Db;
 use bytes::Bytes;
-use core::result::Result;
-pub struct Handler {
-    db: Db,
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
+
+#[derive(Clone, Debug)]
+pub struct Db {
+    pub entries: Rc<RefCell<HashMap<String, Bytes>>>,
 }
-impl Handler {
-    pub fn new(db: Db) -> Handler {
-        Handler { db: db }
+impl Db {
+    pub fn new() -> Db {
+        Db {
+            entries: Rc::new(RefCell::new(HashMap::new())),
+        }
     }
+
     pub fn write(&mut self, arr: &[String]) -> Result<&str, &'static str> {
         let key = &arr[1];
         let value = &arr[2];
@@ -17,7 +23,6 @@ impl Handler {
         let val = value.clone();
 
         let p = &self
-            .db
             .entries
             .borrow_mut()
             .insert(String::from(key), Bytes::from(val));
@@ -31,7 +36,7 @@ impl Handler {
     /// Reads data from the database
     pub fn read(&mut self, arr: &[String]) -> Result<Bytes, &str> {
         let key = &arr[1];
-        let db_copy = &self.db.entries.try_borrow().unwrap();
+        let db_copy = &self.entries.try_borrow().unwrap();
         let db_clone = db_copy.clone();
         let query_result = db_clone.get(key);
 
